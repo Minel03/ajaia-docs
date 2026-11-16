@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+You are helping build "Ajaia Docs", a lightweight Google Docs-style editor for a 4-6 hour take-home assessment.
+
+Stack: Next.js (App Router), TypeScript strict, Tailwind, shadcn/ui, Tiptap, Supabase (Postgres, Auth, RLS), Zod, Vitest, Vercel.
+
+Rules:
+
+- Build one milestone at a time. Do not implement features from later milestones.
+- Keep it simple: no extra abstractions, no state libraries, no separate API layer. Use Server Actions or route handlers.
+- Authorization is enforced in the database (RLS) AND validated server-side. Hiding UI is never security.
+- Never expose the Supabase service role key to the client. It is only used in seed scripts.
+- Validate all external input with Zod.
+- After each milestone, summarize what you changed, what could break, and how to verify it.
+- If you are unsure or a decision has tradeoffs, ask before choosing.

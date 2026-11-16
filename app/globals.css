@@ -128,3 +128,80 @@
     @apply font-sans;
   }
 }
+
+.tiptap-page {
+  min-height: 68vh;
+  background: var(--background);
+}
+
+.tiptap-page .tiptap {
+  min-height: 68vh;
+  max-width: 72ch;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.8;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+
+.tiptap-page .tiptap > * + * {
+  margin-top: 1rem;
+}
+
+.tiptap-page .tiptap p {
+  min-height: 1.5em;
+}
+
+.tiptap-page .tiptap h1,
+.tiptap-page .tiptap h2,
+.tiptap-page .tiptap h3 {
+  margin-top: 1.6em;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.tiptap-page .tiptap h1 {
+  font-size: clamp(1.8rem, 4vw, 2.35rem);
+}
+
+.tiptap-page .tiptap h2 {
+  font-size: clamp(1.45rem, 3vw, 1.8rem);
+}
+
+.tiptap-page .tiptap h3 {
+  font-size: 1.25rem;
+}
+
+.tiptap-page .tiptap ul,
+.tiptap-page .tiptap ol {
+  padding-left: 1.7rem;
+}
+
+.tiptap-page .tiptap ul {
+  list-style: disc;
+}
+
+.tiptap-page .tiptap ol {
+  list-style: decimal;
+}
+
+.tiptap-page .tiptap li {
+  padding-left: 0.25rem;
+}
+
+.tiptap-page .tiptap li + li {
+  margin-top: 0.25rem;
+}
+
+.tiptap-page .tiptap li p {
+  margin: 0;
+}
+
+.tiptap-page .tiptap blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+}

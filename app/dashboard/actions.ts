@@ -10,6 +10,11 @@ export type ActionState = { error?: string; success?: boolean };
 const createDocumentSchema = z.object({ title: z.literal("Untitled document") }).strict();
 const documentIdSchema = z.uuid("Invalid document ID.");
 const titleSchema = z.string().trim().min(1, "Title cannot be empty.").max(200, "Title must be 200 characters or fewer.");
+const documentContentSchema = z.object({
+  documentId: documentIdSchema,
+  content: z.object({ type: z.literal("doc") }).passthrough(),
+});
+const maxDocumentContentBytes = 1_000_000;
 
 function revalidateDashboardPaths(documentId?: string) {
   revalidatePath("/dashboard");
@@ -84,5 +89,36 @@ export async function deleteDocument(formData: FormData): Promise<ActionState> {
   if (!data || data.length === 0) return { error: "You don't have permission to delete this document." };
 
   revalidateDashboardPaths(parsed.data.id);
+  return { success: true };
+}
+
+export async function updateDocumentContent(documentId: string, content: unknown): Promise<ActionState> {
+  const parsed = documentContentSchema.safeParse({ documentId, content });
+  if (!parsed.success) return { error: "Invalid document content." };
+
+  let serializedContent: string;
+  try {
+    serializedContent = JSON.stringify(parsed.data.content);
+  } catch {
+    return { error: "Document content must be valid JSON." };
+  }
+  if (new TextEncoder().encode(serializedContent).byteLength > maxDocumentContentBytes) {
+    return { error: "Document content exceeds the 1 MB limit." };
+  }
+
+  const session = await getAuthenticatedClient();
+  if (!session) return { error: "Your session has expired. Please sign in again." };
+
+  const { data, error } = await session.supabase.from("documents")
+    .update({ content: parsed.data.content })
+    .eq("id", parsed.data.documentId)
+    .select("id");
+  if (error?.code === "42501" || (!error && (!data || data.length === 0))) {
+    return { error: "You don't have permission to edit this document." };
+  }
+  if (error) return { error: `Could not save the document: ${error.message}` };
+  if (!data || data.length === 0) return { error: "You don't have permission to edit this document." };
+
+  revalidateDashboardPaths(parsed.data.documentId);
   return { success: true };
 }

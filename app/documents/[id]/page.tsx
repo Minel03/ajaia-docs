@@ -1,9 +1,10 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
+import type { JSONContent } from "@tiptap/core";
 import { DocumentListSkeleton } from "@/components/document-list-skeleton";
+import { TiptapEditor } from "@/components/tiptap-editor";
 import { createClient } from "@/lib/supabase/server";
 
 type DocumentPageProps = { params: Promise<{ id: string }> };
@@ -26,21 +27,37 @@ async function DocumentContent({ params }: DocumentPageProps) {
   if (authError || !user) redirect("/login");
 
   const { data: document, error } = await supabase.from("documents")
-    .select("id,title,content")
+    .select("id,title,content,owner_id")
     .eq("id", id)
     .maybeSingle();
   if (error || !document) notFound();
 
+  let role: "owner" | "editor" | "viewer";
+  if (document.owner_id === user.id) {
+    role = "owner";
+  } else {
+    const { data: share, error: shareError } = await supabase.from("document_shares")
+      .select("permission")
+      .eq("document_id", id)
+      .eq("shared_with", user.id)
+      .maybeSingle();
+    if (shareError || !share) notFound();
+    role = share.permission;
+  }
+
+  const storedContent = document.content && typeof document.content === "object"
+    ? document.content as JSONContent
+    : { type: "doc", content: [] } satisfies JSONContent;
+  const content = storedContent.type === "doc" && (!storedContent.content || storedContent.content.length === 0)
+    ? { type: "doc", content: [{ type: "paragraph" }] } satisfies JSONContent
+    : storedContent;
+
   return (
-    <main className="mx-auto min-h-screen w-full max-w-4xl bg-background px-4 py-8 sm:px-8">
-      <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">← Back to My Documents</Link>
-      <header className="my-8 border-b pb-6">
-        <p className="text-sm text-muted-foreground">Document</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{document.title}</h1>
-      </header>
-      <pre className="overflow-x-auto rounded-xl border bg-muted/30 p-5 text-sm leading-6">
-        {JSON.stringify(document.content, null, 2)}
-      </pre>
-    </main>
+    <TiptapEditor
+      documentId={document.id}
+      initialTitle={document.title}
+      initialContent={content}
+      role={role}
+    />
   );
 }

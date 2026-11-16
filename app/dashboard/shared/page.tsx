@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { DocumentList, type DocumentListItem } from "@/components/document-list";
 import { DocumentListSkeleton } from "@/components/document-list-skeleton";
 import { createClient } from "@/lib/supabase/server";
+import { firstRelation } from "@/lib/first-relation";
 
 export default function SharedDocumentsPage() {
   return (
@@ -28,21 +29,21 @@ async function SharedDocuments() {
     return <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Could not load shared documents. Please refresh and try again.</p>;
   }
 
-  const documents: DocumentListItem[] = data.flatMap((share) =>
-    share.documents.map((document) => {
-      const owner = Array.isArray(document.owner) ? document.owner[0] : document.owner;
-      return {
-        id: document.id,
-        title: document.title,
-        updated_at: document.updated_at,
-        ownerName: owner?.full_name,
-        ownerEmail: owner?.email,
-        permission: share.permission,
-        canRename: share.permission === "editor",
-        canDelete: false,
-      };
-    }),
-  );
+  const documents: DocumentListItem[] = data.flatMap((share) => {
+    const document = firstRelation(share.documents);
+    if (!document) return [];
+    const owner = firstRelation(document.owner);
+    return [{
+      id: document.id,
+      title: document.title,
+      updated_at: document.updated_at,
+      ownerName: owner?.full_name,
+      ownerEmail: owner?.email,
+      permission: share.permission,
+      canRename: share.permission === "editor",
+      canDelete: false,
+    }];
+  });
 
   return (
     <div className="space-y-6">

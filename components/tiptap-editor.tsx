@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import type { JSONContent } from "@tiptap/core";
 import {
   Bold,
@@ -14,7 +13,6 @@ import {
   List,
   ListOrdered,
   Redo2,
-  Share2,
   Underline,
   Undo2,
 } from "lucide-react";
@@ -22,22 +20,27 @@ import { renameDocument, updateDocumentContent, type ActionState } from "@/app/d
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createTiptapExtensions } from "@/lib/tiptap-extensions";
+import { ShareDialog } from "@/components/share-dialog";
+import { getDocumentCapabilities, type DocumentRole } from "@/lib/document-capabilities";
 
-type DocumentRole = "owner" | "editor" | "viewer";
 type SaveStatus = "saved" | "saving" | "unsaved" | "error";
+const editorExtensions = createTiptapExtensions();
 
 export function TiptapEditor({
   documentId,
   initialTitle,
   initialContent,
   role,
+  owner,
 }: {
   documentId: string;
   initialTitle: string;
   initialContent: JSONContent;
   role: DocumentRole;
+  owner?: { name: string; email: string };
 }) {
-  const canEdit = role !== "viewer";
+  const { canEdit, canShare } = getDocumentCapabilities(role);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editRevision, setEditRevision] = useState(0);
@@ -95,7 +98,7 @@ export function TiptapEditor({
   const editor = useEditor({
     immediatelyRender: false,
     editable: canEdit,
-    extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] } })],
+    extensions: editorExtensions,
     content: initialContent,
     editorProps: {
       attributes: {
@@ -220,12 +223,7 @@ export function TiptapEditor({
                   </>
                 ) : <span>{statusText}</span>}
               </div>
-              <span title="Coming soon">
-                <Button type="button" variant="outline" size="sm" disabled title="Coming soon" aria-label="Share, coming soon">
-                  <Share2 className="size-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Share</span>
-                </Button>
-              </span>
+              {canShare && owner && <ShareDialog documentId={documentId} owner={owner} />}
             </div>
           </div>
         </header>
@@ -246,7 +244,14 @@ export function TiptapEditor({
             <ToolbarButton label="Undo" active={false} disabled={!canEdit || !editor} onClick={() => editor?.chain().focus().undo().run()}><Undo2 /></ToolbarButton>
             <ToolbarButton label="Redo" active={false} disabled={!canEdit || !editor} onClick={() => editor?.chain().focus().redo().run()}><Redo2 /></ToolbarButton>
           </div>
-          <EditorContent editor={editor} className="tiptap-page" />
+          <div
+            className={`tiptap-page ${canEdit ? "cursor-text" : ""}`}
+            onClick={() => {
+              if (canEdit) editor?.commands.focus();
+            }}
+          >
+            <EditorContent editor={editor} />
+          </div>
         </section>
       </div>
     </main>

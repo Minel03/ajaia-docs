@@ -58,6 +58,10 @@ async function DocumentContent({ params }: DocumentPageProps) {
       initialTitle={document.title}
       initialContent={content}
       role={role}
+      owner={role === "owner" ? {
+        name: typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "Owner",
+        email: user.email ?? "",
+      } : undefined}
     />
   );
 }

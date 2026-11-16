@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run --configLoader runner",
+    "test:watch": "vitest --configLoader runner",
+    "test:rls": "npm run verify:rls",
     "seed": "tsx scripts/seed.mts",
     "verify:rls": "tsx scripts/verify-rls.mts"
   },
@@ -14,12 +17,14 @@
     "@base-ui/react": "^1.9.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.109.0",
+    "@tiptap/html": "^3.34.0",
     "@tiptap/pm": "^3.34.0",
     "@tiptap/react": "^3.34.0",
     "@tiptap/starter-kit": "^3.34.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.73.0",
+    "marked": "^18.2.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -37,6 +42,7 @@
     "shadcn": "^4.23.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

@@ -2,18 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { convertImportToDocument } from "@/lib/import/convert";
+import { decodeImportFileBytes, importFileSchema, validateImportFileMetadata } from "@/lib/import/validate-file";
+import {
+  createDocumentSchema,
+  deleteDocumentSchema,
+  documentContentSchema,
+  renameDocumentSchema,
+  titleSchema,
+} from "@/lib/validation";
 
 export type ActionState = { error?: string; success?: boolean };
 
-const createDocumentSchema = z.object({ title: z.literal("Untitled document") }).strict();
-const documentIdSchema = z.uuid("Invalid document ID.");
-const titleSchema = z.string().trim().min(1, "Title cannot be empty.").max(200, "Title must be 200 characters or fewer.");
-const documentContentSchema = z.object({
-  documentId: documentIdSchema,
-  content: z.object({ type: z.literal("doc") }).passthrough(),
-});
 const maxDocumentContentBytes = 1_000_000;
 
 function revalidateDashboardPaths(documentId?: string) {
@@ -47,8 +48,59 @@ export async function createDocument(_previousState: ActionState, formData: Form
   redirect(`/documents/${data.id}`);
 }
 
+export async function importDocument(_previousState: ActionState, formData: FormData): Promise<ActionState> {
+  const fileResult = importFileSchema.safeParse(formData.get("file"));
+  if (!fileResult.success) return { error: "Choose a .txt or .md file to import." };
+
+  const file = fileResult.data;
+  const metadataResult = validateImportFileMetadata(file.name, file.size);
+  if (!metadataResult.success) return { error: metadataResult.error };
+  const extension = metadataResult.extension;
+
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch {
+    return { error: "Could not read the selected file. Please try again." };
+  }
+  const decoded = decodeImportFileBytes(bytes);
+  if (!decoded.success) return { error: decoded.error };
+  const { text } = decoded;
+
+  let imported: Awaited<ReturnType<typeof convertImportToDocument>>;
+  try {
+    imported = await convertImportToDocument(text, file.name, extension);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not convert the selected file.";
+    return { error: message };
+  }
+
+  const validatedTitle = titleSchema.safeParse(imported.title);
+  if (!validatedTitle.success) return { error: "Could not create a valid title from this file." };
+  const serializedContent = JSON.stringify(imported.content);
+  if (new TextEncoder().encode(serializedContent).byteLength > maxDocumentContentBytes) {
+    return { error: "Converted document exceeds the 1 MB content limit." };
+  }
+
+  const session = await getAuthenticatedClient();
+  if (!session) return { error: "Your session has expired. Please sign in again." };
+
+  const { data, error } = await session.supabase.from("documents")
+    .insert({
+      title: validatedTitle.data,
+      content: imported.content,
+      owner_id: session.user.id,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return { error: error?.message ?? "Could not create the imported document." };
+
+  revalidateDashboardPaths(data.id);
+  redirect(`/documents/${data.id}`);
+}
+
 export async function renameDocument(formData: FormData): Promise<ActionState> {
-  const parsed = z.object({ id: documentIdSchema, title: titleSchema }).safeParse({
+  const parsed = renameDocumentSchema.safeParse({
     id: formData.get("id"),
     title: formData.get("title"),
   });
@@ -72,7 +124,7 @@ export async function renameDocument(formData: FormData): Promise<ActionState> {
 }
 
 export async function deleteDocument(formData: FormData): Promise<ActionState> {
-  const parsed = z.object({ id: documentIdSchema }).safeParse({ id: formData.get("id") });
+  const parsed = deleteDocumentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid document ID." };
 
   const session = await getAuthenticatedClient();

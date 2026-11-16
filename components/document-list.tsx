@@ -10,6 +10,7 @@ export type DocumentListItem = {
   ownerName?: string | null;
   ownerEmail?: string | null;
   permission?: "viewer" | "editor";
+  shared?: boolean;
   canRename: boolean;
   canDelete: boolean;
 };
@@ -61,6 +62,7 @@ export function DocumentList({ documents, emptyTitle = "No documents yet" }: {
               <Link href={`/documents/${document.id}`} className="truncate text-sm font-medium hover:underline">
                 {document.title}
               </Link>
+              {document.shared && <Badge variant="outline">Shared</Badge>}
               {document.permission && <Badge variant="secondary">{document.permission}</Badge>}
             </div>
             <p className="mt-1 truncate text-xs text-muted-foreground">

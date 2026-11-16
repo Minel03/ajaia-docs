@@ -1,0 +1,7 @@
+Import sample: plain text
+This line stays in the same paragraph with a hard break.
+
+This is a second paragraph. It is separated by a blank line.
+This line is another hard break in the second paragraph.
+
+This is a third paragraph.

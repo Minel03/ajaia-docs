@@ -1,5 +1,9 @@
 # Architecture
 
+## What I prioritized and why
+
+With a 4-6 hour limit, I put depth into reliable persistence, access control enforced in the database rather than only in the UI, a usable editor with safe autosave, and import that treats uploaded files as untrusted. I deliberately skipped real-time collaboration, comments, and version history, because each needs its own conflict-handling and storage decisions and would have cut into correctness and testing.
+
 ## Stack and choices
 
 - **Next.js 16 App Router and React** provide server-rendered pages, route layouts, and Server Actions in one app.

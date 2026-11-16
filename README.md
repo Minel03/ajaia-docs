@@ -2,6 +2,8 @@
 
 Ajaia Docs is a collaborative document editor with account-based access, document sharing, and plain text or Markdown import.
 
+Live app: <https://ajaia-docs-eight-lilac.vercel.app/>. Reviewers can sign in with the demo accounts below; no local setup is needed.
+
 ## Features
 
 - Create, rename, and delete documents.
